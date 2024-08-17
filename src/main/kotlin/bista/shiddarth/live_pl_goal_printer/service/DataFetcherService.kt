@@ -3,31 +3,71 @@ package bista.shiddarth.live_pl_goal_printer.service
 import bista.shiddarth.live_pl_goal_printer.model.DataMap
 import bista.shiddarth.live_pl_goal_printer.model.FplEvent
 import bista.shiddarth.live_pl_goal_printer.model.GoalEvent
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class DataFetcherService(private val fplService: FplService) {
 
-    val log = LoggerFactory.getLogger(this::class.java)
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+    private val latestScores = mutableMapOf<Int, Pair<Int, Int>>()
+
     fun getGoalsScored(): List<GoalEvent> {
-        val latestEvents = fplService.getLatestEvents()
+        log.info("Getting Latest stats from FPL")
+        val latestEvents = fplService.getLatestEvents().filter { it.finishedProvisional }
         log.info(latestEvents.toString())
 
-        return latestEvents.filter { it.finishedProvisional }. map { event ->
+        return latestEvents.filter {
+            hasAnyTeamScored(it)
+        }.map { event ->
+            val hasHomeTeamScored = event.homeTeamScore > (latestScores[event.matchId]?.first ?: 0)
+            //Update with latest scores
+            latestScores[event.matchId] = Pair(event.homeTeamScore, event.awayTeamScore)
+
+            val latestGoalStat = event.stats.find { it.identifier == "goals_scored" }
+            val latestAssistStat = event.stats.find { it.identifier == "assists" }
+
+            val goalScorer = if (hasHomeTeamScored) {
+                DataMap.playerIdMap[latestGoalStat?.homeTeamStats?.lastOrNull()?.element]
+            } else {
+                DataMap.playerIdMap[latestGoalStat?.awayTeamStats?.lastOrNull()?.element]
+            }
+
+            val assist = if (hasHomeTeamScored) {
+                DataMap.playerIdMap[latestAssistStat?.homeTeamStats?.lastOrNull()?.element]
+            } else {
+                DataMap.playerIdMap[latestAssistStat?.awayTeamStats?.lastOrNull()?.element]
+            }
+
             GoalEvent(
                 homeTeam = DataMap.teamIdMap.getValue(event.homeTeam),
                 homeScore = event.homeTeamScore,
-                homeGoalScorers = event.stats.find {it.identifier == "goals_scored"}?.homeTeamStats?.map { it.element.toString() } ?: emptyList(),
-                awayTeam = DataMap.teamIdMap.getValue(event.awayTeam),
+                homeGoalScorers = event.stats.find { it.identifier == "goals_scored" }?.homeTeamStats?.map {
+                    DataMap.playerIdMap.getValue(
+                        it.element
+                    )
+                } ?: emptyList(),
+                awayTeam = DataMap.teamIdMap[event.awayTeam] ?: "No data found",
                 awayScore = event.awayTeamScore,
-                awayGoalScorers = event.stats.find {it.identifier == "goals_scored"}?.awayTeamStats?.map { it.element.toString() } ?: emptyList(),
-                goalScorer = event.stats.first { gameStats -> gameStats.identifier == "goals_scored" }.homeTeamStats.firstNotNullOfOrNull { it.element.toString() }
-                    ?: " No Goal scored",
-                assist = event.stats.first { gameStats -> gameStats.identifier == "assists" }.homeTeamStats.firstNotNullOfOrNull { it.element.toString() }
-                    ?: " No Assist given"
+                awayGoalScorers = event.stats.find { it.identifier == "goals_scored" }?.awayTeamStats?.map {
+                    DataMap.playerIdMap.getValue(
+                        it.element
+                    )
+                } ?: emptyList(),
+                goalScorer = goalScorer ?: "No goal scorer found",
+                assist = assist ?: "No assist found",
+                minute = event.minutes
             )
         }
 
+    }
+
+    private fun hasAnyTeamScored(event: FplEvent): Boolean {
+        val latestScore = latestScores[event.matchId] ?: Pair(0, 0)
+        val hasHomeTeamScored = event.homeTeamScore > latestScore.first
+        val hasAwayTeamScored = event.awayTeamScore > latestScore.second
+
+        return hasHomeTeamScored || hasAwayTeamScored
     }
 }

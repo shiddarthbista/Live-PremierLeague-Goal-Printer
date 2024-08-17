@@ -9,10 +9,12 @@ import org.springframework.web.client.RestClient
 class FplClient {
     private final val restClient: RestClient = RestClient.create()
 
-    fun getAllEvents(): List<FplEvent> {
+    private val realUrl = "https://fantasy.premierleague.com/api/fixtures/?event=1"
+    private val mockUrl = "http://localhost:8081/score"
 
+    fun getAllEvents(): List<FplEvent> {
         val events = restClient.get()
-            .uri("https://fantasy.premierleague.com/api/fixtures/?event=1")
+            .uri(mockUrl)
             .retrieve()
             .body(object : ParameterizedTypeReference<List<FplEvent>>() {})
 

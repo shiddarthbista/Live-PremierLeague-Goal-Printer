@@ -3,6 +3,8 @@ package bista.shiddarth.live_pl_goal_printer.model
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class FplEvent(
+    @JsonProperty("code")
+    val matchId: Int,
     @JsonProperty("finished_provisional")
     val finishedProvisional: Boolean,
     val minutes: Int,
