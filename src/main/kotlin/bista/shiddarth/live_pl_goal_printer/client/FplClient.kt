@@ -14,7 +14,7 @@ class FplClient {
 
     fun getAllEvents(): List<FplEvent> {
         val events = restClient.get()
-            .uri(mockUrl)
+            .uri(realUrl)
             .retrieve()
             .body(object : ParameterizedTypeReference<List<FplEvent>>() {})
 

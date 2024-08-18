@@ -15,11 +15,13 @@ class PrinterController(private val dataFetcherService: DataFetcherService) {
     private final val restClient: RestClient = RestClient.create()
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 300000)
     @GetMapping("/goals")
     fun getGoalScored(): List<GoalEvent> {
         val goalsScored = dataFetcherService.getGoalsScored()
-        logger.info(goalsScored.toString())
+        if (goalsScored.isNotEmpty()) {
+                logger.info(goalsScored.toString())
+            }
         return goalsScored
     }
 

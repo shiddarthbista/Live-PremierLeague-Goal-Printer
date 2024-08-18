@@ -11,19 +11,19 @@ import org.springframework.stereotype.Service
 class DataFetcherService(private val fplService: FplService) {
 
     val log: Logger = LoggerFactory.getLogger(this::class.java)
-    private val latestScores = mutableMapOf<Int, Pair<Int, Int>>()
+    private val latestScoresMap = mutableMapOf<Int, Pair<Int, Int>>()
 
     fun getGoalsScored(): List<GoalEvent> {
         log.info("Getting Latest stats from FPL")
-        val latestEvents = fplService.getLatestEvents().filter { it.finishedProvisional }
+        val latestEvents = fplService.getLatestEvents().filter { it.started && !it.finishedProvisional }
         log.info(latestEvents.toString())
 
         return latestEvents.filter {
             hasAnyTeamScored(it)
         }.map { event ->
-            val hasHomeTeamScored = event.homeTeamScore > (latestScores[event.matchId]?.first ?: 0)
+            val hasHomeTeamScored = event.homeTeamScore > (latestScoresMap[event.matchId]?.first ?: 0)
             //Update with latest scores
-            latestScores[event.matchId] = Pair(event.homeTeamScore, event.awayTeamScore)
+            latestScoresMap[event.matchId] = Pair(event.homeTeamScore, event.awayTeamScore)
 
             val latestGoalStat = event.stats.find { it.identifier == "goals_scored" }
             val latestAssistStat = event.stats.find { it.identifier == "assists" }
@@ -64,7 +64,7 @@ class DataFetcherService(private val fplService: FplService) {
     }
 
     private fun hasAnyTeamScored(event: FplEvent): Boolean {
-        val latestScore = latestScores[event.matchId] ?: Pair(0, 0)
+        val latestScore = latestScoresMap[event.matchId] ?: Pair(0, 0)
         val hasHomeTeamScored = event.homeTeamScore > latestScore.first
         val hasAwayTeamScored = event.awayTeamScore > latestScore.second
 
