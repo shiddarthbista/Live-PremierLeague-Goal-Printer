@@ -37,5 +37,4 @@ class PrinterController(private val dataFetcherService: DataFetcherService) {
             "${it.id} to ${it.firstName} ${it.lastName}"
         } ?: emptyList()
     }
-
 }
