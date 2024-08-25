@@ -11,7 +11,8 @@ data class GoalEvent(
     val awayGoalScorers : List<String>,
     val goalScorer: String,
     val assist: String?,
-    val minute: Int
+    val minute: Int,
+    val hasHomeTeamScored: Boolean
 )
 
 data class PlayerMap(

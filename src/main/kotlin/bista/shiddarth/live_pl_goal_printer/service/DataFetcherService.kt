@@ -57,7 +57,8 @@ class DataFetcherService(private val fplService: FplService) {
                 } ?: emptyList(),
                 goalScorer = goalScorer ?: "No goal scorer found",
                 assist = assist ?: "No assist found",
-                minute = event.minutes
+                minute = event.minutes,
+                hasHomeTeamScored = hasHomeTeamScored
             )
         }
 
